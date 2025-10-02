@@ -172,3 +172,8 @@ docker-compose build
 2. Логи сервисов: `docker-compose logs [service]`
 3. Доступность портов: `netstat -tlnp | grep :8000`
 4. Health checks: `curl http://localhost:8000/health`
+
+## Модульные тесты
+
+Для проверки: back-end отправить curl запрос
+    curl -X http://<your-ip>/health
