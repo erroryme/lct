@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    environment:
+      - COM_PORT_BPM=/dev/ttyUSB0
+      - COM_PORT_UC=/dev/ttyUSB1
+      - BAUDRATE=9600
+      - DB_HOST=timescaledb
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ctg_db
+      - AI_HOST=ai-service
+      - AI_PORT=8080
+    ports:
+      - "8000:8000"
+    devices:
+      - "/dev/pts/2:/dev/ttyUSB0"
+      - "/dev/pts/4:/dev/ttyUSB1"
+    depends_on:
+      - timescaledb
+      - ai-service
+    networks:
+      - med-network
+    group_add:
+      - dialout
+    restart: unless-stopped
+
+  ai-service:
+    build: ./ai
+    ports:
+      - "8080:8080"
+    networks:
+      - med-network
+    restart: unless-stopped
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ctg_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./db/000_schema.sql:/docker-entrypoint-initdb.d/000_schema.sql
+    networks:
+      - med-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  med-network:
+    driver: bridge
+
+volumes:
+  timescale_data:
+
