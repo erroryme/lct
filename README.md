@@ -175,5 +175,5 @@ docker-compose build
 
 ## Модульные тесты
 
-Для проверки: back-end отправить curl запрос
+Для проверки: back-end отправить curl запрос:
     curl -X http://(your-ip)/health
