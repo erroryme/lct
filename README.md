@@ -173,7 +173,20 @@ docker-compose build
 3. Доступность портов: `netstat -tlnp | grep :8000`
 4. Health checks: `curl http://localhost:8000/health`
 
-## Модульные тесты
+## Тесты модулей
 
-Для проверки: back-end отправить curl запрос:
-    curl -X http://(your-ip)/health
+Для проверки: back-end отправить curl запрос: `curl -X http://(your-ip)/health`
+    
+Проверка работы базы данных осуществляется запуском `DB_healthchecker.py` Рядом со скриптом должен находится `db_config.json`
+Пример работы скрипта:
+```txt
+=== Healthcheck базы данных ===
+Сетевое соединение доступно (192.168.0.105:5432)
+Подключение к базе успешно
+Расширение TimescaleDB установлено
+Таблица patients: 1 записей
+Таблица ctg_studies: 1 записей
+Таблица ctg_samples: 120 записей
+=== Итог ===
+База работает корректно
+```
