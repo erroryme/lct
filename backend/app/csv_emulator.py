@@ -62,7 +62,7 @@ def load_csv_data():
 # =============== BPM Эмуляция ===============
 
 async def emulate_bpm_data(stop_event: asyncio.Event, websocket_manager=None):
-    """Эмуляция отправки BPM данных"""
+    """Эмуляция отправки BPM данных (с автоматическим циклическим повтором)"""
     global bpm_data_count, bpm_error_count, bpm_index
     
     if bpm_data is None:
@@ -77,23 +77,19 @@ async def emulate_bpm_data(stop_event: asyncio.Event, websocket_manager=None):
             current_elapsed = time.time() - start_time
             next_time = bpm_data.iloc[bpm_index]['time_sec']
             
-            # Ждем, пока не придет время для следующей записи (с учетом скорости воспроизведения)
             adjusted_time = next_time / config.playback_speed
             if current_elapsed >= adjusted_time:
                 raw_value = float(bpm_data.iloc[bpm_index]['value'])
                 sec_offset = int(current_elapsed)
                 
-                # Логирование успешно распарсенных данных
                 logger.info(f"[BPM] Эмуляция данных: raw={raw_value}, offset={sec_offset}с")
                 bpm_data_count += 1
 
-                # Обработка BPM
                 result = bpm_processor.add_point(sec_offset, raw_value)
                 if result and result[0]:
                     fhr_value = int(round(result[1]))
                     logger.info(f"[BPM] Успешно обработано: FHR={fhr_value} BPM")
 
-                    # Эмуляция WebSocket отправки
                     if websocket_manager:
                         msg = {
                             "time_sec": int(time.time()),
@@ -102,24 +98,19 @@ async def emulate_bpm_data(stop_event: asyncio.Event, websocket_manager=None):
                         await websocket_manager.broadcast("bpm", json.dumps(msg, ensure_ascii=False))
                         logger.debug(f"[BPM] Отправлено через WebSocket: {msg}")
                     else:
-                        # Просто логируем, если нет WebSocket manager
                         logger.info(f"[BPM] Данные для отправки: {fhr_value} BPM")
                 else:
                     logger.debug(f"[BPM] Данные не прошли фильтрацию: raw={raw_value}")
 
                 bpm_index += 1
                 
-                # Проверяем, нужно ли перезапустить воспроизведение
+                # === ВСЕГДА перезапускаем с начала при достижении конца ===
                 if bpm_index >= len(bpm_data):
-                    if config.loop_playback:
-                        bpm_index = 0
-                        start_time = time.time()  # Сбрасываем время для нового цикла
-                        logger.info("[BPM] Перезапуск воспроизведения (циклический режим)")
-                    else:
-                        logger.info("[BPM] Достигнут конец данных, завершение эмуляции")
-                        break
+                    bpm_index = 0
+                    start_time = time.time()
+                    logger.info("[BPM] Достигнут конец данных — перезапуск воспроизведения")
+
             else:
-                # Ждём до следующего события
                 await asyncio.sleep(0.01)
 
     except asyncio.CancelledError:
@@ -129,10 +120,11 @@ async def emulate_bpm_data(stop_event: asyncio.Event, websocket_manager=None):
     finally:
         logger.info(f"[BPM] Эмуляция завершена. Статистика: обработано={bpm_data_count}, ошибок={bpm_error_count}")
 
+
 # =============== UC Эмуляция ===============
 
 async def emulate_uc_data(stop_event: asyncio.Event, websocket_manager=None):
-    """Эмуляция отправки UC данных"""
+    """Эмуляция отправки UC данных (с автоматическим циклическим повтором)"""
     global uc_data_count, uc_error_count, uc_index
     
     if uc_data is None:
@@ -147,13 +139,11 @@ async def emulate_uc_data(stop_event: asyncio.Event, websocket_manager=None):
             current_elapsed = time.time() - start_time
             next_time = uc_data.iloc[uc_index]['time_sec']
             
-            # Ждем, пока не придет время для следующей записи (с учетом скорости воспроизведения)
             adjusted_time = next_time / config.playback_speed
             if current_elapsed >= adjusted_time:
                 raw_value = float(uc_data.iloc[uc_index]['value'])
                 sec_offset = int(current_elapsed)
                 
-                # Логирование успешно распарсенных данных
                 logger.info(f"[UC] Эмуляция данных: raw={raw_value}, offset={sec_offset}с")
                 uc_data_count += 1
 
@@ -163,7 +153,6 @@ async def emulate_uc_data(stop_event: asyncio.Event, websocket_manager=None):
                     for uc_value in results:
                         logger.info(f"[UC] Успешно обработано: UC={uc_value}")
 
-                        # Эмуляция WebSocket отправки
                         if websocket_manager:
                             msg = {
                                 "time_sec": int(time.time()),
@@ -172,24 +161,19 @@ async def emulate_uc_data(stop_event: asyncio.Event, websocket_manager=None):
                             await websocket_manager.broadcast("uc", json.dumps(msg, ensure_ascii=False))
                             logger.debug(f"[UC] Отправлено через WebSocket: {msg}")
                         else:
-                            # Просто логируем, если нет WebSocket manager
                             logger.info(f"[UC] Данные для отправки: {uc_value} UC")
                 else:
                     logger.debug(f"[UC] Данные не прошли фильтрацию: raw={raw_value}")
 
                 uc_index += 1
                 
-                # Проверяем, нужно ли перезапустить воспроизведение
+                # === ВСЕГДА перезапускаем с начала при достижении конца ===
                 if uc_index >= len(uc_data):
-                    if config.loop_playback:
-                        uc_index = 0
-                        start_time = time.time()  # Сбрасываем время для нового цикла
-                        logger.info("[UC] Перезапуск воспроизведения (циклический режим)")
-                    else:
-                        logger.info("[UC] Достигнут конец данных, завершение эмуляции")
-                        break
+                    uc_index = 0
+                    start_time = time.time()
+                    logger.info("[UC] Достигнут конец данных — перезапуск воспроизведения")
+
             else:
-                # Ждём до следующего события
                 await asyncio.sleep(0.01)
 
     except asyncio.CancelledError:
