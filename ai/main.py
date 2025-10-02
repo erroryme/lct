@@ -7,6 +7,28 @@ import joblib
 from websockets import connect
 from collections import deque
 
+# --- Определение модели (вместо импорта из TEST_train_resnet_multihead) ---
+import torch.nn as nn
+
+class MultiHeadMLP(nn.Module):
+    def __init__(self, in_dim, hidden_dim=128, dropout=0.3):
+        super().__init__()
+        self.shared = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU()
+        )
+        self.head_short = nn.Linear(hidden_dim, 1)
+        self.head_long = nn.Linear(hidden_dim, 2)
+
+    def forward(self, x):
+        z = self.shared(x)
+        return self.head_short(z), self.head_long(z)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # --- Настройки ---
 BASE = os.path.dirname(__file__)
 FASTAPI_WS_URL = os.getenv("FASTAPI_WS_URL", "ws://host.docker.internal:8000")
@@ -16,10 +38,9 @@ print(f"🔌 Подключение к бэкенду: {FASTAPI_WS_URL}")
 print(f"🪟 Размер окна признаков: {WINDOW_SIZE}")
 
 # --- Загрузка модели ---
-from TEST_train_resnet_multihead import MultiHeadMLP, device
 
 scaler = joblib.load(os.path.join(BASE, "scaler_unified.pkl"))
-expected_dim = len(scaler.feature_names_in_)
+expected_dim = scaler.n_features_in_
 
 if 2 * WINDOW_SIZE != expected_dim:
     raise ValueError(

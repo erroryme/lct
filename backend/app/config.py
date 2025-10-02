@@ -6,7 +6,7 @@ class CSVConfig:
     
     def __init__(self):
         # Пути к CSV файлам
-        self.csv_data_dir: str = os.getenv("CSV_DATA_DIR", "/home/serv_admin/back/med")
+        self.csv_data_dir: str = os.getenv("CSV_DATA_DIR", "./app/test")
         self.csv_file_bpm: str = os.getenv("CSV_FILE_BPM", "20250901-01000001_1.csv")
         self.csv_file_uc: str = os.getenv("CSV_FILE_UC", "20250901-01000001_2.csv")
         

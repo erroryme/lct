@@ -12,6 +12,5 @@ COPY scaler_unified.pkl .
 COPY unified_mlp.pt .
 COPY thresholds.json .
 
-
 # Запуск
 CMD ["python", "main.py"]

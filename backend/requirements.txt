@@ -7,3 +7,5 @@ asyncpg
 pyserial
 reportlab
 psycopg2-binary
+pandas
+scipy
