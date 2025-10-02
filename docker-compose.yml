@@ -21,20 +21,21 @@ services:
       - "/dev/pts/4:/dev/ttyUSB1"
     depends_on:
       - timescaledb
-      - ai-service
+      - ai-client
     networks:
       - med-network
     group_add:
       - dialout
     restart: unless-stopped
 
-  ai-service:
+  ai-client:
     build: ./ai
-    ports:
-      - "8080:8080"
-    networks:
-      - med-network
+    container_name: ai-inference-client
+    environment:
+      FASTAPI_WS_URL: ws://host.docker.internal:8000
+      WINDOW_SIZE: 10
     restart: unless-stopped
+    network_mode: "host"
 
   timescaledb:
     image: timescale/timescaledb:latest-pg14

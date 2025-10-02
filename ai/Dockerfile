@@ -1,23 +1,17 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
-# Установка системных зависимостей
-RUN apt-get update && apt-get install -y \
-    gcc \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Установка рабочей директории
 WORKDIR /app
 
-# Копирование и установка зависимостей
+# Установка зависимостей
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копирование кода приложения
-COPY . .
+# Копирование модели и кода
+COPY main.py .
+COPY scaler_unified.pkl .
+COPY unified_mlp.pt .
+COPY thresholds.json .
 
-# Открытие порта
-EXPOSE 8080
 
-# Команда запуска
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Запуск
+CMD ["python", "main.py"]
